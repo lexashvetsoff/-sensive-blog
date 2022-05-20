@@ -49,7 +49,8 @@ def get_likes_count(post):
 
 def index(request):
 
-    most_popular_posts = Post.objects.annotate(likes_count=Count('likes')).order_by('-likes_count').prefetch_related('author')
+    # most_popular_posts = Post.objects.annotate(likes_count=Count('likes')).order_by('-likes_count').prefetch_related('author')
+    most_popular_posts = Post.objects.annotate(likes_count=Count('likes')).order_by('-likes_count').prefetch_related('author', 'comments')
     most_popular_posts_ids = [post.id for post in most_popular_posts]
 
     posts_with_comments = Post.objects.filter(id__in=most_popular_posts_ids).annotate(comments_count=Count('comments'))
