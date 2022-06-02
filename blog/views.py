@@ -26,7 +26,6 @@ def serialize_post_optimized(post):
         'title': post.title,
         'teaser_text': post.text[:200],
         'author': post.author.username,
-        # 'comments_amount': len(Comment.objects.filter(post=post)),
         'comments_amount': post.comments_count,
         'image_url': post.image.url if post.image else None,
         'published_at': post.published_at,
@@ -49,26 +48,17 @@ def get_likes_count(post):
 
 def index(request):
 
-    # most_popular_posts = Post.objects.annotate(likes_count=Count('likes')).order_by('-likes_count').prefetch_related('author')
-    most_popular_posts = Post.objects.annotate(likes_count=Count('likes')).order_by('-likes_count').prefetch_related('author', 'comments')
-    most_popular_posts_ids = [post.id for post in most_popular_posts]
-
-    posts_with_comments = Post.objects.filter(id__in=most_popular_posts_ids).annotate(comments_count=Count('comments'))
-    ids_and_comments = posts_with_comments.values_list('id', 'comments_count')
+    posts = Post.objects.annotate(comments_count=Count('comments'))
+    ids_and_comments = posts.values_list('id', 'comments_count')
     count_for_id = dict(ids_and_comments)
-
+    
+    most_popular_posts = Post.objects.annotate(likes_count=Count('likes')).order_by('-likes_count').prefetch_related('author')
     for post in most_popular_posts:
         post.comments_count = count_for_id[post.id]
-
+    
     most_fresh_posts = Post.objects.order_by('-published_at').prefetch_related('author')
-    most_fresh_posts_ids = [post.id for post in most_fresh_posts]
-
-    posts_fresh_with_comments = Post.objects.filter(id__in=most_fresh_posts_ids).annotate(comments_count=Count('comments'))
-    fresh_ids_and_comments = posts_fresh_with_comments.values_list('id', 'comments_count')
-    fresh_count_for_id = dict(fresh_ids_and_comments)
-
     for post in most_fresh_posts:
-        post.comments_count = fresh_count_for_id[post.id]
+        post.comments_count = count_for_id[post.id]
 
     # tags = Tag.objects.all()
     # popular_tags = sorted(tags, key=get_related_posts_count)
