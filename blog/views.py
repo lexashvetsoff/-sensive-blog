@@ -48,9 +48,9 @@ def get_likes_count(post):
 
 def index(request):
 
-    most_popular_posts = Post.objects.fetch_with_comments_count(Post.objects.popular().prefetch_related('author'))
+    most_popular_posts = Post.objects.fetch_with_comments_count(Post.objects.popular().prefetch_related('author', 'tags'))
     
-    most_fresh_posts = Post.objects.fetch_with_comments_count(Post.objects.order_by('-published_at').prefetch_related('author'))
+    most_fresh_posts = Post.objects.fetch_with_comments_count(Post.objects.order_by('-published_at').prefetch_related('author', 'tags'))
     
     most_popular_tags = Tag.objects.popular()[:5]
 
@@ -109,7 +109,7 @@ def tag_filter(request, tag_title):
     tag = Tag.objects.get(title=tag_title)
 
     most_popular_tags = Tag.objects.popular()[:5]
-    
+
     most_popular_posts = Post.objects.fetch_with_comments_count(Post.objects.popular().prefetch_related('author'))
 
     related_posts = tag.posts.all()[:20]
