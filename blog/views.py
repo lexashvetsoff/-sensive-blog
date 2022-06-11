@@ -1,3 +1,4 @@
+from turtle import title
 from django.shortcuts import render
 from django.db.models import Count
 from blog.models import Comment, Post, Tag
@@ -36,9 +37,12 @@ def serialize_post_optimized(post):
 
 
 def serialize_tag(tag):
+    tags = Tag.objects.annotate(Count('posts'))
+    post_with_tag = tags.get(title=tag.title).posts__count
     return {
         'title': tag.title,
-        'posts_with_tag': len(Post.objects.filter(tags=tag)),
+        # 'posts_with_tag': len(Post.objects.filter(tags=tag)),
+        'posts_with_tag': post_with_tag,
     }
 
 
