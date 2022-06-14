@@ -1,6 +1,6 @@
 from turtle import title
 from django.shortcuts import render
-from django.db.models import Count
+from django.db.models import Count, Prefetch
 from blog.models import Comment, Post, Tag
 
 
@@ -31,7 +31,8 @@ def serialize_post_optimized(post):
         'image_url': post.image.url if post.image else None,
         'published_at': post.published_at,
         'slug': post.slug,
-        'tags': [serialize_tag(tag) for tag in post.tags.all().annotate(Count('posts'))],
+        # 'tags': [serialize_tag(tag) for tag in post.tags.all().annotate(Count('posts'))],
+        'tags': serialize_tag_optimized(post),
         'first_tag_title': post.tags.all()[0].title,
     }
 
@@ -43,15 +44,28 @@ def serialize_tag(tag):
     }
 
 
+def serialize_tag_optimized(post):
+    ser_tag = []
+    tags_count = [tag.posts__count for tag in post.tags.all()]
+    tags_title = [tag.title for tag in post.tags.all()]
+    ser_tag.append({'title': tags_title, 'posts_with_tag': tags_count})
+    # def tag_def(tag):
+    #     return {
+    #         'title': tag.title,
+    #         'posts_with_tag': tag.posts__count,
+    #     }
+    return ser_tag
+
+
 def get_likes_count(post):
     return post.likes__count
 
 
 def index(request):
 
-    most_popular_posts = Post.objects.fetch_with_comments_count(Post.objects.popular().prefetch_related('author', 'tags'))
+    most_popular_posts = Post.objects.prefetch_related(Prefetch('tags', queryset=Tag.objects.annotate(Count('posts')))).fetch_with_comments_count(Post.objects.popular().prefetch_related('author'))
     
-    most_fresh_posts = Post.objects.fetch_with_comments_count(Post.objects.order_by('-published_at').prefetch_related('author', 'tags'))
+    most_fresh_posts = Post.objects.prefetch_related(Prefetch('tags', queryset=Tag.objects.annotate(Count('posts')))).fetch_with_comments_count(Post.objects.order_by('-published_at').prefetch_related('author'))
     
     most_popular_tags = Tag.objects.popular()[:5]
 
